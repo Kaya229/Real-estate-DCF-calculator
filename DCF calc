@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real Estate Investment NPV Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    label { display: block; margin-top: 1rem; }
+    input { width: 100%; max-width: 200px; padding: 0.5rem; margin-top: 0.25rem; }
+    button { margin-top: 1.5rem; padding: 0.75rem 1.5rem; font-size: 1rem; }
+    #result { margin-top: 2rem; font-size: 1.25rem; font-weight: bold; }
+    .guide { margin-top: 4rem; border-top: 1px solid #ccc; padding-top: 2rem; }
+    .guide h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .guide section { margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Real Estate Investment NPV Calculator</h1>
+  <form id="npvForm">
+    <label>
+      Discount Rate (r):
+      <input type="number" id="r" step="0.001" value="0.10" />
+    </label>
+    <label>
+      Perpetual Growth Rate (g):
+      <input type="number" id="g" step="0.001" value="0.02" />
+    </label>
+    <label>
+      Holding Period (years, T):
+      <input type="number" id="T" step="1" value="5" />
+    </label>
+    <label>
+      Potential Annual Rental Income (base_rent):
+      <input type="number" id="base_rent" step="1000" value="50000" />
+    </label>
+    <label>
+      Occupancy Rate (occupancy_rate):
+      <input type="number" id="occupancy_rate" step="0.01" value="0.95" />
+    </label>
+    <label>
+      Annual Operating Expenses (operating_expenses):
+      <input type="number" id="operating_expenses" step="1000" value="15000" />
+    </label>
+    <label>
+      Initial Investment (initial_investment):
+      <input type="number" id="initial_investment" step="1000" value="800000" />
+    </label>
+    <button type="button" onclick="calculateNPV()">Calculate NPV</button>
+  </form>
+  <div id="result">Result: NPV will appear here</div>
+
+  <script>
+    function calculateNPV() {
+      const r = parseFloat(document.getElementById('r').value);
+      const g = parseFloat(document.getElementById('g').value);
+      const T = parseInt(document.getElementById('T').value, 10);
+      const baseRent = parseFloat(document.getElementById('base_rent').value);
+      const occRate = parseFloat(document.getElementById('occupancy_rate').value);
+      const expenses = parseFloat(document.getElementById('operating_expenses').value);
+      const initialInv = parseFloat(document.getElementById('initial_investment').value);
+
+      if (isNaN(r) || isNaN(g) || isNaN(T) || isNaN(baseRent) || isNaN(occRate) || isNaN(expenses) || isNaN(initialInv)) {
+        document.getElementById('result').textContent = 'Please enter valid numeric values in all fields.';
+        return;
+      }
+
+      let NOI = [];
+      for (let t = 1; t <= T; t++) {
+        const yearRent = baseRent * occRate * Math.pow(1 + g, t);
+        NOI.push(yearRent - expenses);
+      }
+
+      let pvCashflows = NOI.reduce((acc, noi, idx) => {
+        const t = idx + 1;
+        return acc + noi / Math.pow(1 + r, t);
+      }, 0);
+
+      const capRate = r - g;
+      const TV = (NOI[NOI.length - 1] * (1 + g)) / capRate;
+      const pvTV = TV / Math.pow(1 + r, T);
+
+      const NPV = pvCashflows + pvTV - initialInv;
+
+      document.getElementById('result').textContent =
+        `NPV: $${NPV.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+  </script>
+
+  <div class="guide">
+    <h2>Real Estate DCF Investment Analysis Guide</h2>
+    <section>
+      <strong>1. Define Your Holding Period</strong>
+      <p>• Term: 5 years (common default; 10 years is possible but harder to forecast accurately)</p>
+    </section>
+    <section>
+      <strong>2. Project Future Cash Flows</strong>
+      <ul>
+        <li>base_rent: from Zillow data</li>
+        <li>occupancy_rate: 93.5% (HUD Durham–Chapel Hill report)</li>
+        <li>operating_expenses = 0.40 × base_rent × occupancy_rate (Steadily blog)</li>
+        <li>NOIₜ = (base_rent × occupancy_rate × (1+g)ᵗ) – operating_expenses</li>
+      </ul>
+    </section>
+    <section>
+      <strong>3. Set Discount & Growth Rates</strong>
+      <ul>
+        <li>Discount rate r ≈ 6.9% (Cap rate 4.9% + g 2%) → round to 7%</li>
+        <li>Growth rate g = 2% (long-term inflation target)</li>
+      </ul>
+    </section>
+    <section>
+      <strong>4. Calculate Present Value of Cash Flows</strong>
+      <p>PV_cashflows = Σₜ=1⁵ [NOIₜ ÷ (1 + r)ᵗ]</p>
+    </section>
+    <section>
+      <strong>5. Calculate Terminal Value (TV)</strong>
+      <p>TV = NOI₅ × (1 + g) ÷ (r – g)<br>PV_TV = TV ÷ (1 + r)⁵</p>
+    </section>
+    <section>
+      <strong>6. Compute Net Present Value (NPV)</strong>
+      <p>NPV = PV_cashflows + PV_TV – initial_investment</p>
+    </section>
+    <section>
+      <strong>7. Sensitivity & Scenario Analysis</strong>
+      <p>Try ±100 bp variations on r, g, occupancy_rate, operating_expenses.<br>Run Base / Best / Worst case NPVs.</p>
+    </section>
+    <section>
+      <strong>Quick-Start Checklist</strong>
+      <ul>
+        <li>occupancy_rate = 0.935</li>
+        <li>operating_expenses = 0.40 × base_rent × occupancy_rate</li>
+        <li>r = 0.07, g = 0.02</li>
+        <li>Calculate NOIₜ, PV_cashflows, TV, PV_TV, and NPV</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
